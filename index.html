@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kingdom of Valoria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'valoria-purple': {
+                '50': '#f4f2ff',
+                '100': '#ebe9fe',
+                '200': '#d9d6fe',
+                '300': '#c0bafd',
+                '400': '#a295fc',
+                '500': '#8773fb',
+                '600': '#7655f5',
+                '700': '#653eef',
+                '800': '#5430d0',
+                '900': '#452ab0',
+                '950': '#291a75',
+              },
+              'valoria-gold': {
+                '50': '#fffbeb',
+                '100': '#fef3c7',
+                '200': '#fde68a',
+                '300': '#fcd34d',
+                '400': '#fbbf24',
+                '500': '#f59e0b',
+                '600': '#d97706',
+                '700': '#b45309',
+                '800': '#92400e',
+                '900': '#78350f',
+                '950': '#451a03',
+              },
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['"EB Garamond"', 'serif'],
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+              'subtle-shine': 'subtleShine 2s infinite ease-in-out',
+            },
+            keyframes: {
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              subtleShine: {
+                '0%, 100%': { filter: 'brightness(1)' },
+                '50%': { filter: 'brightness(1.05)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

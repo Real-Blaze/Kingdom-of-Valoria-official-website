@@ -1,0 +1,9 @@
+
+import React from 'react';
+
+export const CrownIcon: React.FC<{ className?: string }> = ({ className = "h-6 w-6" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"></path>
+    <path d="M5 20h14"></path>
+  </svg>
+);

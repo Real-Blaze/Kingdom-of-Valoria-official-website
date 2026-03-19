@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the application, potentially a leader, lord, or traveller.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address (null for anonymous)." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "role": { "type": "string", "enum": ["admin", "lord", "general", "leader", "citizen", "traveller"], "description": "The user's role." },
+        "permissions": { "type": "array", "items": { "type": "string" }, "description": "Specific access permissions." },
+        "visaStatus": { "type": "string", "enum": ["none", "applied", "approved", "rejected"], "description": "Status of the user's visa." },
+        "voterCardId": { "type": "string", "description": "Unique ID for the voter card." },
+        "country": { "type": "string", "description": "The user's country of origin." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user was created." }
+      },
+      "required": ["uid", "role"]
+    },
+    "globalStats": {
+      "title": "Global Stats",
+      "description": "Global statistics for the kingdom.",
+      "type": "object",
+      "properties": {
+        "visitorCount": { "type": "integer", "description": "Total number of visitors." },
+        "countries": { "type": "object", "description": "Map of country codes to counts." }
+      }
+    },
+    "newsPost": {
+      "title": "News Post",
+      "description": "A news update posted by a leader.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the news post." },
+        "content": { "type": "string", "description": "The content of the news post." },
+        "authorId": { "type": "string", "description": "The UID of the author." },
+        "authorName": { "type": "string", "description": "The name of the author." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the post was created." }
+      },
+      "required": ["title", "content", "authorId", "authorName", "createdAt"]
+    },
+    "jobApplication": {
+      "title": "Job Application",
+      "description": "An application for a position in a department.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "department": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "department", "status", "createdAt"]
+    },
+    "visaApplication": {
+      "title": "Visa Application",
+      "description": "An application for a kingdom visa.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "status", "createdAt"]
+    },
+    "citizenshipApplication": {
+      "title": "Citizenship Application",
+      "description": "An application to become a citizen of Valoria.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "realName": { "type": "string" },
+        "gender": { "type": "string" },
+        "age": { "type": "string" },
+        "interests": { "type": "string" },
+        "contribution": { "type": "string" },
+        "discovery": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "realName", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "Collection of users."
+    },
+    "news/{newsId}": {
+      "schema": "newsPost",
+      "description": "Collection of news posts."
+    },
+    "stats/{statId}": {
+      "schema": "globalStats",
+      "description": "Global statistics."
+    },
+    "jobApplications/{appId}": {
+      "schema": "jobApplication",
+      "description": "Department job applications."
+    },
+    "visaApplications/{appId}": {
+      "schema": "visaApplication",
+      "description": "Visa applications."
+    },
+    "citizenshipApplications/{appId}": {
+      "schema": "citizenshipApplication",
+      "description": "Citizenship applications."
+    }
+  }
+}

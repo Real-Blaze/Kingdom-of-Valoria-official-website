@@ -1,0 +1,247 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: uid (string)
+    // Fields:
+    //   - uid: string (required, immutable) - The user's unique ID.
+    //   - email: string (optional, email format) - The user's email address.
+    //   - displayName: string (optional) - The user's display name.
+    //   - role: string (required, enum: ['admin', 'lord', 'general', 'leader', 'citizen', 'traveller']) - The user's role.
+    //   - permissions: list (optional) - Array of strings for specific access.
+    //   - visaStatus: string (optional, enum: ['none', 'applied', 'approved', 'rejected']) - Visa status.
+    //   - voterCardId: string (optional) - Unique ID for voter card.
+    //   - country: string (optional) - User's country.
+    //   - createdAt: timestamp (required, immutable) - When the user was created.
+    //
+    // Collection: stats
+    // Document ID: global
+    // Fields:
+    //   - visitorCount: integer - Total visitors.
+    //   - countries: map - Map of country codes to counts.
+    //
+    // Collection: news
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required, max 100 chars) - The title of the news post.
+    //   - content: string (required, max 5000 chars) - The content of the news post.
+    //   - authorId: string (required, immutable) - The UID of the author.
+    //   - authorName: string (required) - The name of the author.
+    //   - createdAt: timestamp (required, immutable) - When the post was created.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+
+    // Check if user owns the resource (for user-owned documents)
+    function isOwner(userId) {
+       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is owner based on document's uid field
+    function isDocOwner() {
+       return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    // Verify UID hasn't been tampered with on create
+    function uidUnchanged() {
+       return !('uid' in request.resource.data) ||
+         request.resource.data.uid == request.auth.uid;
+    }
+
+    // Ensure uid field is not modified on update
+    function uidNotModified() {
+       return !('uid' in request.resource.data) ||
+         request.resource.data.uid == resource.data.uid;
+    }
+
+    // Validate required fields exist
+    function hasRequiredFields(fields) {
+       return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate string length
+    function validStringLength(field, minLen, maxLen) {
+       return request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate email format
+    function isValidEmail(email) {
+       return email is string &&
+         email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Validate that the document contains only the allowed fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that the document hasn't changed in the fields that are not allowed to be changed
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Check if the user is an admin
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "lemonff64@gmail.com" && request.auth.token.email_verified == true)
+        );
+    }
+
+    // Check if the user is a Lord
+    function isLord() {
+      return isAdmin() ||
+        (isAuthenticated() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'lord');
+    }
+
+    // Check if the user is a General
+    function isGeneral() {
+      return isLord() ||
+        (isAuthenticated() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'general');
+    }
+
+    // Check if the user is a leader or higher
+    function isLeader() {
+      return isGeneral() ||
+        (isAuthenticated() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'leader');
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'role', 'permissions', 'visaStatus', 'voterCardId', 'country', 'createdAt']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             (!('email' in data) || data.email == null || (data.email is string && isValidEmail(data.email))) &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() < 100)) &&
+             data.role in ['admin', 'lord', 'general', 'leader', 'citizen', 'traveller'] &&
+             (!('permissions' in data) || (data.permissions is list)) &&
+             (!('visaStatus' in data) || (data.visaStatus in ['none', 'applied', 'approved', 'rejected'])) &&
+             (!('voterCardId' in data) || (data.voterCardId is string)) &&
+             (!('country' in data) || (data.country is string)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNewsPost(data) {
+      return hasOnlyAllowedFields(['title', 'content', 'authorId', 'authorName', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 5000 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() < 100 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Allow reading own profile or if leader/higher
+      allow read: if isOwner(userId) || isLeader();
+
+      // Allow create if valid user data
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       isValidUser(request.resource.data) &&
+                       (
+                         request.resource.data.role in ['traveller', 'citizen'] ||
+                         isAdmin()
+                       );
+
+      // Allow update if owner (but cannot change role/permissions unless admin/lord)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       isValidUser(request.resource.data) &&
+                       uidNotModified() &&
+                       areImmutableFieldsUnchanged(['createdAt']) &&
+                       (
+                         (
+                           request.resource.data.role == resource.data.role &&
+                           (!('permissions' in request.resource.data) || request.resource.data.permissions == resource.data.permissions)
+                         ) ||
+                         isLord()
+                       );
+    }
+
+    match /stats/{statId} {
+      // Anyone can read stats
+      allow read: if true;
+      
+      // Allow creating the initial global stats document
+      allow create: if statId == 'global' &&
+                       request.resource.data.keys().hasOnly(['visitorCount', 'countries']) &&
+                       request.resource.data.visitorCount == 0;
+                       
+      // Allow anyone to increment visitorCount and countries
+      allow update: if statId == 'global' &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visitorCount', 'countries']);
+    }
+
+    match /news/{newsId} {
+      // Anyone can read news
+      allow read: if true;
+
+      // Only leaders/admins can create news
+      allow create: if isLeader() && isValidNewsPost(request.resource.data);
+
+      // Only the author (if still leader) or admin can update/delete
+      allow update: if (isLeader() && resource.data.authorId == request.auth.uid) || isAdmin() &&
+                       isValidNewsPost(request.resource.data) &&
+                       areImmutableFieldsUnchanged(['authorId', 'createdAt']);
+
+      allow delete: if (isLeader() && resource.data.authorId == request.auth.uid) || isAdmin();
+    }
+
+    match /jobApplications/{appId} {
+      // User can read their own, leaders can read all
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.uid || isLeader());
+      // Any authenticated user can apply
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;
+      // Only leaders can update status
+      allow update: if isLeader() && areImmutableFieldsUnchanged(['uid', 'department', 'createdAt']);
+    }
+
+    match /visaApplications/{appId} {
+      // User can read their own, leaders can read all
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.uid || isLeader());
+      // Any authenticated user can apply
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;
+      // Only leaders can update status
+      allow update: if isLeader() && areImmutableFieldsUnchanged(['uid', 'createdAt']);
+    }
+
+    match /citizenshipApplications/{appId} {
+      // User can read their own, leaders can read all
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.uid || isLeader());
+      // Any authenticated user can apply
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;
+      // Only leaders can update status
+      allow update: if isLeader() && areImmutableFieldsUnchanged(['uid', 'createdAt']);
+    }
+  }
+}
