@@ -82,12 +82,12 @@ export const VisitorCounter: React.FC = () => {
       <div className="space-y-1">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">Global Visitors</p>
         <div className="text-4xl font-black font-mono text-emerald-400 tracking-tighter">
-          {stats.visitorCount.toLocaleString()}
+          {(stats.visitorCount || 0).toLocaleString()}
         </div>
       </div>
       
       <div className="flex flex-wrap justify-center gap-2 mt-4">
-        {Object.entries(stats.countries)
+        {Object.entries(stats.countries || {})
           .sort((a, b) => (b[1] as number) - (a[1] as number)) // Sort by count
           .slice(0, 8) // Top 8
           .map(([code, count]) => (
